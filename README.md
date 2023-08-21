@@ -1,2 +1,2 @@
-# implementation_seven
-This repo includes works developed during the 7th semester
+# Module implementation
+Módulo 2 Implementación de una técnica de aprendizaje máquina sin el uso de un framework
