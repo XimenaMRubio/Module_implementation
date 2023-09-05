@@ -8,38 +8,55 @@ Original file is located at
 """
 
 if __name__ == "__main__":
+#Se importan las librerías necesarias
   import pandas as pd
   import numpy as np
+  import matplotlib.pyplot as plt
   from math import sqrt
   import statistics as st
   from sklearn.datasets import load_iris
   from sklearn.model_selection import train_test_split
-  from sklearn.metrics import accuracy_score, confusion_matrix
+  from sklearn.metrics import accuracy_score, confusion_matrix,classification_report
 
+#Función que calcula la distancia euclidiana entre dos vectores
+#En este caso, los vectores son las filas y regresa una distancia
   def euclidean_d(row1,row2):
     distance = 0
-    distance = sqrt(sum((row1 - row2)**2)) #get the euclidean distance from 2 vectors
+    distance = sqrt(sum((row1 - row2)**2))
     return(distance)
 
-  def neighbors(data_train,new_row,num_neighbors): #get neighbors for one row
+#Función que calcula los vecinos, donde se le da la base de entrenamiento,el nuevo registro a clasificar y el número de vecinos
+#Recibe los datos de entrenamiento, la nueva fila a comparar y el número de vecinos
+#Devuelve los vecinos de la nueva fila
+  def neighbors(data_train,new_row,num_neighbors):
     data_train = pd.DataFrame(data_train)
     list_distance = []
     for row in range(len(data_train)):
+      #En esta parte, se agregan tuplas y no valores únicos porque de esta forma es más fácil su manipulación.
+      #Se puede ver como un tipo de "identificador".
       list_distance.append((euclidean_d(data_train.iloc[row][:-1],new_row),list(data_train.iloc[row])))
     list_distance.sort()
     neighbors = []
-    for favs in range(num_neighbors):
+    for favs in range(num_neighbors): #toma el número de vecinos seleccionados.
       neighbors.append(list_distance[favs])
     return(neighbors)
 
+#Función que clasifica empleando knn. Esta función toma en cuenta una posible multimoda entre los vecinos seleccionados.
+#La función llama a la función neighbors que a su vez, llama a la función euclidean_d
+#Recibe los datos de entrenamiento, la fila nueva a clasificar y el número de vecinos
+#Regresa la clase donde se encuentra la nueva fila
   def classificationknn(data_train,new_row,num_neighbors):
-    neighbors_final = list(neighbors(data_train,new_row,num_neighbors)) #list of neighbors
+    neighbors_final = list(neighbors(data_train,new_row,num_neighbors)) #lista de vecinos
     classes= []
     for vec in range(len(neighbors_final)):
       classes.append(neighbors_final[vec][1][-1])
     class_pred = st.multimode(classes)
-    if len(class_pred) > 1: #multimode case
-      second_review=[] #list with the rows of multimode
+    if len(class_pred) > 1: #caso multimoda
+    #Este caso se da porque al seleccionar los vecinos se toma la moda,
+    #en caso de que exista más de una moda, se seleccionará la clase que se encuentre más cerca.
+    #Con cerca, se hace referencia a que se tomará la clase que tenga la menor distancia (euclidean_d) con la
+    #nueva fila que se quiere clasificar.
+      second_review=[] #lista con las modas multimolda (si es que hay)
       for rep in range(len(neighbors_final)):
         if neighbors_final[rep][1][-1] in class_pred:
           second_review.append(neighbors_final[rep])
@@ -51,18 +68,37 @@ if __name__ == "__main__":
     else:
       return(int(class_pred[0]))
 
+#Se baja la base de datos iris, se crea una variable para el target y se separa el dataset en prueba y entrenamiento.
   iris = load_iris()
   x=pd.DataFrame(iris.data)
   x.columns=['sepal_len', 'sepal_wid', 'petal_len', 'petal_wid']
   y = iris.target
-  Xtrain, Xtest, ytrain, ytest = train_test_split(x,y, random_state=5)
+  Xtrain, Xtest, ytrain, ytest = train_test_split(x,y,test_size=.75) #el test y training se divide en 75 25 respectivamente
   Xtrain['class'] = ytrain
 
-  for knn_v in [1,2,3,4,5,6,7,8,9,10]:
+#Se toman de 1 a 10 vecinos y se calculan métricas para cada uno de los casos.
+  list_accuracy=[]
+  for knn_v in [1,2,3,4,5,6,7,8,9,10]: #se hacen pruebas con 1 hasta 10 vecinos
     final_classifier=[]
-    for xtest in range(len(Xtest)):
+    for xtest in range(len(Xtest)): #en este for se realiza la clasificación empleando las funciones
       trial = classificationknn(Xtrain,list(Xtest.iloc[xtest]),knn_v)
       final_classifier.append(trial)
     print('\n Using',knn_v,'neighbors:')
-    print('The confusion matrix is','\n',confusion_matrix(ytest, final_classifier))
-    print('The accuracy is',accuracy_score(ytest, final_classifier))
+    cr= classification_report(ytest,final_classifier,zero_division=0)
+    print(cr)
+    cm = confusion_matrix(ytest, final_classifier)
+    print('The confusion matrix is','\n',cm)
+    accuracy = accuracy_score(ytest, final_classifier)
+    list_accuracy.append(accuracy)
+
+#creando el plot de accuracy
+  plt.plot(list_accuracy)
+  plt.xlabel("Neighbors")
+  plt.xticks(size = 10)
+  plt.title("Accuracy")
+  plt.show()
+
+#En la salida podemos observar que primero se indica el número de vecinos
+#Después, se obtienen las métricas y matriz de confusión
+#Al final podemos observar el gráfico de como va cambiando el accuracy dependiendo del no. de vecinos.
+
