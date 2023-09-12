@@ -5,13 +5,14 @@ if __name__ == "__main__":
     import pandas as pd
     import numpy as np
     import matplotlib.pyplot as plt
-    import statistics as st
     from sklearn.model_selection import train_test_split,learning_curve
     from sklearn.ensemble import RandomForestClassifier
-    from sklearn.metrics import confusion_matrix,classification_report, mean_absolute_error, mean_squared_error, accuracy_score
+    from sklearn.metrics import classification_report, mean_absolute_error, mean_squared_error, accuracy_score
     from imblearn.metrics import specificity_score
     from sklearn.datasets import load_iris
-    from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
+    #estas librerías no se utilizan en cada corrida, sin embargo se dejan porque se emplearon para el grid y random search
+    #from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
+    import time
 
     #cargando los datos
     iris = load_iris()
@@ -31,9 +32,9 @@ if __name__ == "__main__":
     plt.ylabel('Frecuencia')
     plt.title('Distribución de categorías (Entrenamiento)')
     #Arreglando detalles para que se vea bien
-    plt.text(.35,5,str(pd.DataFrame(ytrain).value_counts()[0]), ha='center', va='bottom', fontsize=10, color='black')
-    plt.text(1,5,str(pd.DataFrame(ytrain).value_counts()[1]), ha='center', va='bottom', fontsize=10, color='black')
-    plt.text(1.7,5,str(pd.DataFrame(ytrain).value_counts()[2]), ha='center', va='bottom', fontsize=10, color='black')
+    plt.text(.35,2,str(pd.DataFrame(ytrain).value_counts()[0]), ha='center', va='bottom', fontsize=10, color='black')
+    plt.text(1,2,str(pd.DataFrame(ytrain).value_counts()[1]), ha='center', va='bottom', fontsize=10, color='black')
+    plt.text(1.7,2,str(pd.DataFrame(ytrain).value_counts()[2]), ha='center', va='bottom', fontsize=10, color='black')
 
     #Configurándolas como subplots
     plt.subplot(3, 2, 2) 
@@ -41,19 +42,19 @@ if __name__ == "__main__":
     plt.xlabel('Diabetes')
     plt.ylabel('Frecuencia')
     plt.title('Distribución de categorías (Prueba)')
-    plt.text(.35,5,str(pd.DataFrame(ytest).value_counts()[0]), ha='center', va='bottom', fontsize=10, color='black')
-    plt.text(1,5,str(pd.DataFrame(ytest).value_counts()[1]), ha='center', va='bottom', fontsize=10, color='black')
-    plt.text(1.7,5,str(pd.DataFrame(ytest).value_counts()[2]), ha='center', va='bottom', fontsize=10, color='black')
+    plt.text(.35,2,str(pd.DataFrame(ytest).value_counts()[0]), ha='center', va='bottom', fontsize=10, color='black')
+    plt.text(1,2,str(pd.DataFrame(ytest).value_counts()[1]), ha='center', va='bottom', fontsize=10, color='black')
+    plt.text(1.7,2,str(pd.DataFrame(ytest).value_counts()[2]), ha='center', va='bottom', fontsize=10, color='black')
 
     #Configurándolas como subplots
     plt.subplot(3, 2, 3) 
     plt.hist(ytest,bins=3,color='green', edgecolor='black')
     plt.xlabel('Diabetes')
     plt.ylabel('Frecuencia')
-    plt.title('Distribución de categorías (Prueba)')
-    plt.text(.35,5,str(pd.DataFrame(yvalidation).value_counts()[0]), ha='center', va='bottom', fontsize=10, color='black')
-    plt.text(1,5,str(pd.DataFrame(yvalidation).value_counts()[1]), ha='center', va='bottom', fontsize=10, color='black')
-    plt.text(1.7,5,str(pd.DataFrame(yvalidation).value_counts()[2]), ha='center', va='bottom', fontsize=10, color='black')
+    plt.title('Distribución de categorías (Validación)')
+    plt.text(.35,2,str(pd.DataFrame(yvalidation).value_counts()[0]), ha='center', va='bottom', fontsize=10, color='black')
+    plt.text(1,2,str(pd.DataFrame(yvalidation).value_counts()[1]), ha='center', va='bottom', fontsize=10, color='black')
+    plt.text(1.7,2,str(pd.DataFrame(yvalidation).value_counts()[2]), ha='center', va='bottom', fontsize=10, color='black')
 
     plt.subplots_adjust(hspace=1.5, wspace=1.5)
     plt.show()
@@ -115,6 +116,9 @@ if __name__ == "__main__":
        #Realiza la predicción
        ypredict = model.predict(Xtest)
 
+       #Realiza la predicción validation
+       ypredict_val = model.predict(Xvalidation)
+
        #Metricas
        print('La configuración de este modelo es: ',model,'\n') #Muestra la configuración del modelo
        cr= classification_report(ytest,ypredict,zero_division=0) #Se crea el classification report
@@ -122,14 +126,15 @@ if __name__ == "__main__":
        print(f"MAE: {mean_absolute_error(ytest, ypredict)}") #Se calcula el MAE
        print(f"MSE: {mean_squared_error(ytest, ypredict)}") #Se calcula el MSE
        print('Overall specificity score: ',specificity_score(ytest,ypredict,average='weighted'),'\n','\n') #Calculando el specificity
-       return(accuracy_score(ytest, ypredict))
+       #print(ypredict.shape,ypredict_val.shape)
+       return(accuracy_score(ytest, ypredict),accuracy_score(yvalidation, ypredict_val))
     
     #función para obtener la curva de aprendizaje
     def plot_learning_curve(model, title, X, y, train_sizes=np.linspace(.1, 1.0, 5)):
         estimator = model
         plt.figure()
         plt.title(title)
-        plt.xlabel("Tamaño del Conjunto de Entrenamiento")
+        plt.xlabel("Tamaño del Conjunto")
         plt.ylabel("Puntuación")
         #se obtienen los scores para poder crear la gráfica
         #se calcula la mean y la desviación del test y train score
@@ -147,9 +152,9 @@ if __name__ == "__main__":
         plt.fill_between(train_sizes, test_scores_mean - test_scores_std,
                          test_scores_mean + test_scores_std, alpha=0.1, color="g")
         plt.plot(train_sizes, train_scores_mean, 'o-', color="r",
-                 label="Puntuación de Entrenamiento")
+                 label="Puntuación del set")
         plt.plot(train_sizes, test_scores_mean, 'o-', color="g",
-                 label="Puntuación de Validación")
+                 label="Puntuación de Cross-Validación")
 
         plt.legend(loc="best")
         return (plt.show)
@@ -163,16 +168,34 @@ if __name__ == "__main__":
                 RandomForestClassifier(max_depth=5, max_leaf_nodes=6, n_estimators=50)] #random search
             
     list_accuracy = []
-    list_accuracy_val = []
+    #list_accuracy_val = []
     for i in range(len(model_list)): #se itera sobre la lista para ir probando modelo por modelo
         #Se llama a las funciones definidas previamente para obtener las métricas y las gráficas correctas
         print('MODELO',i+1)
-        list_accuracy.append(implement_model(model_list[i],Xtrain,ytrain,Xtest,ytest))
-        plot_learning_curve(model_list[i], str(model_list[i]), x, y)
+        list_accuracy.append(implement_model(model_list[i],Xtrain,ytrain,Xtest,ytest,Xvalidation,yvalidation))
+        plot_learning_curve(model_list[i], str(model_list[i]), Xtest, ytest)
+        plot_learning_curve(model_list[i], str(model_list[i]), Xvalidation, yvalidation)
+        time.sleep(2)
+        
 
     #creando el plot de accuracy
-    plt.plot(list_accuracy)
+
+    acc_test = []
+    acc_validation = []
+    for j in range(len(list_accuracy)):
+      acc_test.append(list_accuracy[j][0])
+      acc_validation.append(list_accuracy[j][1])
+
+    plt.subplot(2, 2, 1) 
+    plt.plot(acc_test)
     plt.xlabel("Models")
     plt.xticks(size = 10)
     plt.title("Accuracy using test set")
+
+    plt.subplot(2, 2, 2) 
+    plt.plot(acc_validation)
+    plt.xlabel("Models")
+    plt.xticks(size = 10)
+    plt.title("Accuracy using validation set")
     plt.show()
+
