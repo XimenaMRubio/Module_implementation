@@ -25,7 +25,7 @@ if __name__ == "__main__":
     Xvalidation, Xtest, yvalidation, ytest = train_test_split(divXtest,divytest,test_size=.7)
 
     #Creando una gráfica comparativa de la distribución de clases en training, test y validation
-    plt.subplot(2, 2, 1) 
+    plt.subplot(3, 2, 1) 
     plt.hist(ytrain,bins=3,color='green', edgecolor='black')
     plt.xlabel('Diabetes')
     plt.ylabel('Frecuencia')
@@ -36,7 +36,7 @@ if __name__ == "__main__":
     plt.text(1.7,5,str(pd.DataFrame(ytrain).value_counts()[2]), ha='center', va='bottom', fontsize=10, color='black')
 
     #Configurándolas como subplots
-    plt.subplot(2, 2, 2) 
+    plt.subplot(3, 2, 2) 
     plt.hist(ytest,bins=3,color='green', edgecolor='black')
     plt.xlabel('Diabetes')
     plt.ylabel('Frecuencia')
@@ -46,16 +46,16 @@ if __name__ == "__main__":
     plt.text(1.7,5,str(pd.DataFrame(ytest).value_counts()[2]), ha='center', va='bottom', fontsize=10, color='black')
 
     #Configurándolas como subplots
-    plt.subplot(2, 2, 2) 
+    plt.subplot(3, 2, 3) 
     plt.hist(ytest,bins=3,color='green', edgecolor='black')
     plt.xlabel('Diabetes')
     plt.ylabel('Frecuencia')
     plt.title('Distribución de categorías (Prueba)')
-    plt.text(.35,5,str(pd.DataFrame(ytest).value_counts()[0]), ha='center', va='bottom', fontsize=10, color='black')
-    plt.text(1,5,str(pd.DataFrame(ytest).value_counts()[1]), ha='center', va='bottom', fontsize=10, color='black')
-    plt.text(1.7,5,str(pd.DataFrame(ytest).value_counts()[2]), ha='center', va='bottom', fontsize=10, color='black')
+    plt.text(.35,5,str(pd.DataFrame(yvalidation).value_counts()[0]), ha='center', va='bottom', fontsize=10, color='black')
+    plt.text(1,5,str(pd.DataFrame(yvalidation).value_counts()[1]), ha='center', va='bottom', fontsize=10, color='black')
+    plt.text(1.7,5,str(pd.DataFrame(yvalidation).value_counts()[2]), ha='center', va='bottom', fontsize=10, color='black')
 
-    plt.subplots_adjust(hspace=0.5, wspace=1.5)
+    plt.subplots_adjust(hspace=1.5, wspace=1.5)
     plt.show()
 
     #obtener los porcentajes
@@ -110,10 +110,11 @@ if __name__ == "__main__":
     # print(random_search.best_estimator_)
 
     #función de implementación del modelo
-    def implement_model(model):
+    def implement_model(model,Xtrain,ytrain,Xtest,ytest,Xvalidation,yvalidation): #Xtest,ytest #Xvalidation,yvalidation
        model.fit(Xtrain, ytrain)
        #Realiza la predicción
        ypredict = model.predict(Xtest)
+
        #Metricas
        print('La configuración de este modelo es: ',model,'\n') #Muestra la configuración del modelo
        cr= classification_report(ytest,ypredict,zero_division=0) #Se crea el classification report
@@ -162,15 +163,16 @@ if __name__ == "__main__":
                 RandomForestClassifier(max_depth=5, max_leaf_nodes=6, n_estimators=50)] #random search
             
     list_accuracy = []
+    list_accuracy_val = []
     for i in range(len(model_list)): #se itera sobre la lista para ir probando modelo por modelo
         #Se llama a las funciones definidas previamente para obtener las métricas y las gráficas correctas
         print('MODELO',i+1)
-        list_accuracy.append(implement_model(model_list[i]))
+        list_accuracy.append(implement_model(model_list[i],Xtrain,ytrain,Xtest,ytest))
         plot_learning_curve(model_list[i], str(model_list[i]), x, y)
 
     #creando el plot de accuracy
     plt.plot(list_accuracy)
     plt.xlabel("Models")
     plt.xticks(size = 10)
-    plt.title("Accuracy")
+    plt.title("Accuracy using test set")
     plt.show()
